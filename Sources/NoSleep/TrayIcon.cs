@@ -44,13 +44,54 @@ namespace NoSleep
             _TrayIcon.Icon = Properties.Resources.TrayIcon;
             _TrayIcon.DoubleClick += TrayIcon_DoubleClick;
 
-            // Initialize Close menu item for context menu
-            ToolStripMenuItem _CloseMenuItem = new ToolStripMenuItem() { Text = "Close" };
-            _CloseMenuItem.Click += this.CloseMenuItem_Click;
+            //Initialize context Menu
+            TrayMenuContext();
+            //// Initialize Close menu item for context menu
+            //ToolStripMenuItem _CloseMenuItem = new ToolStripMenuItem() { Text = "Close" };
+            //_CloseMenuItem.Click += this.CloseMenuItem_Click;
 
-            // Initialize context menu
+            //// Initialize context menu
+            //_TrayIcon.ContextMenuStrip = new ContextMenuStrip();
+            //_TrayIcon.ContextMenuStrip.Items.Add(_CloseMenuItem);
+        }
+
+        private void TrayMenuContext()
+        {
             _TrayIcon.ContextMenuStrip = new ContextMenuStrip();
-            _TrayIcon.ContextMenuStrip.Items.Add(_CloseMenuItem);
+            _TrayIcon.ContextMenuStrip.Items.Add("Keep Running", null, this.StopAfterTime);
+            _TrayIcon.ContextMenuStrip.Items.Add("Stop After 10 Seconds", null, this.StopAfterTime);
+            _TrayIcon.ContextMenuStrip.Items.Add("Stop After 30 Minutes", null, this.StopAfterTime);
+            _TrayIcon.ContextMenuStrip.Items.Add("Stop After 1 hour", null, this.StopAfterTime);
+            _TrayIcon.ContextMenuStrip.Items.Add("Stop After 2 hours", null, this.StopAfterTime);
+            _TrayIcon.ContextMenuStrip.Items.Add("Stop After 4 hours", null, this.StopAfterTime);
+            _TrayIcon.ContextMenu.MenuItems.Add("-");
+            _TrayIcon.ContextMenuStrip.Items.Add("Close", null, this.CloseMenuItem_Click);
+        }
+
+        private void StopAfterTime(object sender, EventArgs e)
+        {
+            long minute = 1000 * 60;
+            long intervalToStopAfter = 0;
+            
+            switch (sender.ToString())
+            {
+                case "Keep Running": intervalToStopAfter = 0; break;
+                case "Stop After 10 Seconds": intervalToStopAfter = 1000 * 10; break;
+                case "Stop After 30 Minutes": intervalToStopAfter = minute * 30; break;
+                case "Stop After 1 hour": intervalToStopAfter = minute * 60; break;
+                case "Stop After 2 hours": intervalToStopAfter = minute * 120; break;
+                case "Stop After 4 hours": intervalToStopAfter = minute * 240; break;
+                default: intervalToStopAfter = minute * 240; break;
+            }
+            StopTimerAfterCertainInterval(intervalToStopAfter);
+        }
+
+        private void StopTimerAfterCertainInterval(long intervalToStopAfter)
+        {
+            _RefreshTimer.Stop();
+            elapsedTime = -1;
+            totalTime = intervalToStopAfter;
+            _RefreshTimer.Start();
         }
 
         private void OnApplicationExit(object sender, EventArgs e)
@@ -64,6 +105,21 @@ namespace NoSleep
 
         private void TrayIcon_DoubleClick(object sender, EventArgs e) { _TrayIcon.ShowBalloonTip(10000); }
         private void CloseMenuItem_Click(object sender, EventArgs e) { Application.Exit(); }
-        private void _RefreshTimer_Tick(object sender, EventArgs e) { WinU.SetThreadExecutionState(ExecutionMode); }
+
+        long elapsedTime = -1;
+        long totalTime = 0; //default is don't stop
+        private void _RefreshTimer_Tick(object sender, EventArgs e)
+        {
+            if(totalTime != 0) elapsedTime += _RefreshTimer.Interval;
+            if (elapsedTime >= totalTime)
+            {
+                _RefreshTimer.Stop();
+                _TrayIcon.ShowBalloonTip(2000, "Stay Awake Timer Stopped", "Your Stay awake timer has stopped", ToolTipIcon.Info);
+            }
+            else
+            {
+                WinU.SetThreadExecutionState(ExecutionMode);
+            }
+        }
     }
 }
