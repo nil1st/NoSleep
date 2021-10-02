@@ -1,7 +1,7 @@
 # NoSleep windows utility
 *2 October 2021*
 
-Updated Context Menu to stop timer after certain interval
+Updated Context Menu to stop timer after certain interval, made default to stop after 2 hours.
 
 *13 July 2016*
 
