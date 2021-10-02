@@ -107,7 +107,7 @@ namespace NoSleep
         private void CloseMenuItem_Click(object sender, EventArgs e) { Application.Exit(); }
 
         long elapsedTime = -1;
-        long totalTime = 0; //default is don't stop
+        long totalTime = 60*1000*120; //default is 2hrs
         private void _RefreshTimer_Tick(object sender, EventArgs e)
         {
             if(totalTime != 0) elapsedTime += _RefreshTimer.Interval;
