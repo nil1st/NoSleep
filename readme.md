@@ -1,4 +1,8 @@
 # NoSleep windows utility
+*2 October 2021*
+
+Updated Context Menu to stop timer after certain interval
+
 *13 July 2016*
 
 NoSleep utility prevents Windows OS from automatically going into ScreenSaver / Sleep / ScreenLock modes. It's meant for those cases where user cannot change settings (due to corporate-enforced policy, for example). Inspired by Linux Caffeine.
