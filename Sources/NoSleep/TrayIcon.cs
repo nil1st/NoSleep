@@ -64,7 +64,7 @@ namespace NoSleep
             _TrayIcon.ContextMenuStrip.Items.Add("Stop After 1 hour", null, this.StopAfterTime);
             _TrayIcon.ContextMenuStrip.Items.Add("Stop After 2 hours", null, this.StopAfterTime);
             _TrayIcon.ContextMenuStrip.Items.Add("Stop After 4 hours", null, this.StopAfterTime);
-            _TrayIcon.ContextMenu.MenuItems.Add("-");
+            _TrayIcon.ContextMenuStrip.Items.Add("-");
             _TrayIcon.ContextMenuStrip.Items.Add("Close", null, this.CloseMenuItem_Click);
         }
 
