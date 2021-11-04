@@ -72,7 +72,7 @@ namespace NoSleep
         {
             long minute = 1000 * 60;
             long intervalToStopAfter = 0;
-            
+
             switch (sender.ToString())
             {
                 case "Keep Running": intervalToStopAfter = 0; break;
@@ -100,21 +100,30 @@ namespace NoSleep
             _TrayIcon.Visible = false;
             _RefreshTimer.Enabled = false;
             // Clean up continuous state, if required
-            if(ExecutionMode.HasFlag(EXECUTION_STATE.ES_CONTINUOUS)) WinU.SetThreadExecutionState(EXECUTION_STATE.ES_CONTINUOUS);
+            if (ExecutionMode.HasFlag(EXECUTION_STATE.ES_CONTINUOUS)) WinU.SetThreadExecutionState(EXECUTION_STATE.ES_CONTINUOUS);
         }
 
         private void TrayIcon_DoubleClick(object sender, EventArgs e) { _TrayIcon.ShowBalloonTip(10000); }
         private void CloseMenuItem_Click(object sender, EventArgs e) { Application.Exit(); }
 
         long elapsedTime = -1;
-        long totalTime = 60*1000*120; //default is 2hrs
+        long totalTime = 60 * 1000 * 120; //default is 2hrs
+        TimeSpan sleepingTimeStart = new TimeSpan(0, 0, 1); //12:00:01 AM
+        TimeSpan sleepingTimeEnd = new TimeSpan(5, 0, 0); //5:00:00 AM
         private void _RefreshTimer_Tick(object sender, EventArgs e)
         {
-            if(totalTime != 0) elapsedTime += _RefreshTimer.Interval;
+            if (totalTime != 0) elapsedTime += _RefreshTimer.Interval;
             if (elapsedTime >= totalTime)
             {
                 _RefreshTimer.Stop();
                 _TrayIcon.ShowBalloonTip(2000, "Stay Awake Timer Stopped", "Your Stay awake timer has stopped", ToolTipIcon.Info);
+            }
+            else if ((DateTime.Now.TimeOfDay >= sleepingTimeStart) && (DateTime.Now.TimeOfDay <= sleepingTimeEnd))
+            {
+                _RefreshTimer.Stop();
+                _TrayIcon.ShowBalloonTip(3500, "Go to sleep", "Exiting NoSleep App, its time for you to goto sleep.", ToolTipIcon.Info);
+                System.Threading.Thread.Sleep(10000);
+                Application.Exit();
             }
             else
             {
