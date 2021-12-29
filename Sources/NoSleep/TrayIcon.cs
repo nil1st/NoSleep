@@ -19,6 +19,7 @@ namespace NoSleep
         // PRIVATE VARIABLES
         private NotifyIcon _TrayIcon;
         private Timer _RefreshTimer;
+        private const string NOTRUNNING_TEXT = "NoSleep (Not Running)";
 
         // CONSTRUCTOR
         public TrayIcon()
@@ -39,8 +40,8 @@ namespace NoSleep
             _TrayIcon = new NotifyIcon();
             _TrayIcon.BalloonTipIcon = ToolTipIcon.Info;
             _TrayIcon.BalloonTipText = "A tiny C# application to prevent windows screensaver/sleep.";
-            _TrayIcon.BalloonTipTitle = "NoSleep";
-            _TrayIcon.Text = "NoSleep";
+            _TrayIcon.BalloonTipTitle = NOTRUNNING_TEXT;
+            _TrayIcon.Text = NOTRUNNING_TEXT;
             _TrayIcon.Icon = Properties.Resources.TrayIcon;
             _TrayIcon.DoubleClick += TrayIcon_DoubleClick;
 
@@ -75,7 +76,7 @@ namespace NoSleep
 
             switch (sender.ToString())
             {
-                case "Keep Running": intervalToStopAfter = 0; break;
+                case "Keep Running": intervalToStopAfter = 0; _TrayIcon.Text = "NoSleep (Keep Running)"; break;
                 case "Stop After 10 Seconds": intervalToStopAfter = 1000 * 10; break;
                 case "Stop After 30 Minutes": intervalToStopAfter = minute * 30; break;
                 case "Stop After 1 hour": intervalToStopAfter = minute * 60; break;
@@ -116,17 +117,20 @@ namespace NoSleep
             if (elapsedTime >= totalTime)
             {
                 _RefreshTimer.Stop();
+                _TrayIcon.Text = NOTRUNNING_TEXT;
                 _TrayIcon.ShowBalloonTip(2000, "Stay Awake Timer Stopped", "Your Stay awake timer has stopped", ToolTipIcon.Info);
             }
             else if ((DateTime.Now.TimeOfDay >= sleepingTimeStart) && (DateTime.Now.TimeOfDay <= sleepingTimeEnd))
             {
                 _RefreshTimer.Stop();
+                _TrayIcon.Text = NOTRUNNING_TEXT;
                 _TrayIcon.ShowBalloonTip(3500, "Go to sleep", "Exiting NoSleep App, its time for you to goto sleep.", ToolTipIcon.Info);
                 System.Threading.Thread.Sleep(10000);
                 Application.Exit();
             }
             else
             {
+                _TrayIcon.Text = $"NoSleep Timer Running (Elapsed {elapsedTime / 60000} of {totalTime / 60000} minutes)";
                 WinU.SetThreadExecutionState(ExecutionMode);
             }
         }
