@@ -4,7 +4,7 @@ using System.Windows.Forms;
 
 namespace NoSleep
 {
-    public class TrayIcon : ApplicationContext
+    class TrayIcon : ApplicationContext
     {
         /// <summary>
         /// Interval between timer ticks (in ms) to refresh Windows idle timers. Shouldn't be too small to avoid resources consumption. Must be less then Windows screensaver/sleep timer.
@@ -33,6 +33,7 @@ namespace NoSleep
             // Set timer to tick to refresh idle timers
             _RefreshTimer = new Timer() { Interval = RefreshInterval, Enabled = true };
             _RefreshTimer.Tick += _RefreshTimer_Tick;
+            RDPSession rdpSession = new RDPSession();
         }
 
         private void InitializeComponent()
@@ -134,16 +135,16 @@ namespace NoSleep
             //if ((lastRDPStatus == RDPStatus.Disconncted) && (RDPSession.IsRDP()))
             if ((lastRDPStatus == RDPStatus.Disconncted) && (isRDP))
             {
-                _RefreshTimer.Start();
+                if(!_RefreshTimer.Enabled) _RefreshTimer.Start();
                 lastRDPStatus = RDPStatus.Connected;
-                _TrayIcon.ShowBalloonTip(60000, "Remote Session Connected", "Remote Session Connected", ToolTipIcon.Info);
+                _TrayIcon.ShowBalloonTip(3000, "Remote Session Connected", "Remote Session Connected", ToolTipIcon.Info);
             }
             //else if ((lastRDPStatus == RDPStatus.Connected) && (!RDPSession.IsRDP()))
             else if ((lastRDPStatus == RDPStatus.Connected) && (!isRDP))
             {
                 lastRDPStatus = RDPStatus.Disconncted;
-                _TrayIcon.ShowBalloonTip(60000, "Remote Session Disconnected", "Remote Session Disconnected", ToolTipIcon.Info);
-                StopRefreshTimer();
+                //_TrayIcon.ShowBalloonTip(60000, "Remote Session Disconnected", "Remote Session Disconnected", ToolTipIcon.Info);
+                //StopRefreshTimer();
             }
         }
 
@@ -151,7 +152,7 @@ namespace NoSleep
         {
             if (_followRDPStatus)
             {
-                RDPConnectionStatus(RDPSession.IsRDP());
+                RDPConnectionStatus(RDPSession.IsConnected);
                 return;
             }
             if (totalTime != 0) elapsedTime += _RefreshTimer.Interval;
