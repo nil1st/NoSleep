@@ -4,7 +4,7 @@ using System.Windows.Forms;
 
 namespace NoSleep
 {
-    class TrayIcon : ApplicationContext
+    public class TrayIcon : ApplicationContext
     {
         /// <summary>
         /// Interval between timer ticks (in ms) to refresh Windows idle timers. Shouldn't be too small to avoid resources consumption. Must be less then Windows screensaver/sleep timer.
@@ -17,6 +17,7 @@ namespace NoSleep
         const EXECUTION_STATE ExecutionMode = EXECUTION_STATE.ES_CONTINUOUS | EXECUTION_STATE.ES_DISPLAY_REQUIRED | EXECUTION_STATE.ES_SYSTEM_REQUIRED | EXECUTION_STATE.ES_AWAYMODE_REQUIRED;
 
         // PRIVATE VARIABLES
+        private bool _followRDPStatus;
         private NotifyIcon _TrayIcon;
         private Timer _RefreshTimer;
         private const string NOTRUNNING_TEXT = "NoSleep (Not Running)";
@@ -59,6 +60,9 @@ namespace NoSleep
         private void TrayMenuContext()
         {
             _TrayIcon.ContextMenuStrip = new ContextMenuStrip();
+            //_TrayIcon.ContextMenuStrip.Items.Add("Connect", null, this.StopAfterTime);
+            //_TrayIcon.ContextMenuStrip.Items.Add("Disconnect", null, this.StopAfterTime);
+            _TrayIcon.ContextMenuStrip.Items.Add("RDP", null, this.StopAfterTime);
             _TrayIcon.ContextMenuStrip.Items.Add("Keep Running", null, this.StopAfterTime);
             _TrayIcon.ContextMenuStrip.Items.Add("Stop After 10 Seconds", null, this.StopAfterTime);
             _TrayIcon.ContextMenuStrip.Items.Add("Stop After 30 Minutes", null, this.StopAfterTime);
@@ -76,13 +80,16 @@ namespace NoSleep
 
             switch (sender.ToString())
             {
-                case "Keep Running": intervalToStopAfter = 0; _TrayIcon.Text = "NoSleep (Keep Running)"; break;
-                case "Stop After 10 Seconds": intervalToStopAfter = 1000 * 10; break;
-                case "Stop After 30 Minutes": intervalToStopAfter = minute * 30; break;
-                case "Stop After 1 hour": intervalToStopAfter = minute * 60; break;
-                case "Stop After 2 hours": intervalToStopAfter = minute * 120; break;
-                case "Stop After 4 hours": intervalToStopAfter = minute * 240; break;
-                default: intervalToStopAfter = minute * 240; break;
+                //case "Connect": RDPConnectionStatus(true); break;
+                //case "Disconnect": RDPConnectionStatus(false); break;
+                case "RDP": _followRDPStatus = true; intervalToStopAfter = 0; _TrayIcon.Text = "NoSleep (RDP: Keep Running till Disconncted)"; break;
+                case "Keep Running": _followRDPStatus = false; intervalToStopAfter = 0; _TrayIcon.Text = "NoSleep (Keep Running)"; break;
+                case "Stop After 10 Seconds": _followRDPStatus = false; intervalToStopAfter = 1000 * 10; break;
+                case "Stop After 30 Minutes": _followRDPStatus = false; intervalToStopAfter = minute * 30; break;
+                case "Stop After 1 hour": _followRDPStatus = false; intervalToStopAfter = minute * 60; break;
+                case "Stop After 2 hours": _followRDPStatus = false; intervalToStopAfter = minute * 120; break;
+                case "Stop After 4 hours": _followRDPStatus = false; intervalToStopAfter = minute * 240; break;
+                default: _followRDPStatus = false; intervalToStopAfter = minute * 240; break;
             }
             StopTimerAfterCertainInterval(intervalToStopAfter);
         }
@@ -111,14 +118,46 @@ namespace NoSleep
         long totalTime = 60 * 1000 * 120; //default is 2hrs
         TimeSpan sleepingTimeStart = new TimeSpan(0, 0, 1); //12:00:01 AM
         TimeSpan sleepingTimeEnd = new TimeSpan(5, 0, 0); //5:00:00 AM
+        public enum RDPStatus
+        {
+            Connected,
+            Disconncted
+        }
+        private static RDPStatus lastRDPStatus = RDPStatus.Disconncted;
+        public void RDPConnectionStatus(bool isRDP)
+        {
+            //System.Diagnostics.Debug.WriteLine("IsRDP: " + isRDP);
+            //System.Diagnostics.Debug.WriteLine("IsTS: " + System.Windows.Forms.SystemInformation.TerminalServerSession);
+            
+            if (!_followRDPStatus) return;
+
+            //if ((lastRDPStatus == RDPStatus.Disconncted) && (RDPSession.IsRDP()))
+            if ((lastRDPStatus == RDPStatus.Disconncted) && (isRDP))
+            {
+                _RefreshTimer.Start();
+                lastRDPStatus = RDPStatus.Connected;
+                _TrayIcon.ShowBalloonTip(60000, "Remote Session Connected", "Remote Session Connected", ToolTipIcon.Info);
+            }
+            //else if ((lastRDPStatus == RDPStatus.Connected) && (!RDPSession.IsRDP()))
+            else if ((lastRDPStatus == RDPStatus.Connected) && (!isRDP))
+            {
+                lastRDPStatus = RDPStatus.Disconncted;
+                _TrayIcon.ShowBalloonTip(60000, "Remote Session Disconnected", "Remote Session Disconnected", ToolTipIcon.Info);
+                StopRefreshTimer();
+            }
+        }
+
         private void _RefreshTimer_Tick(object sender, EventArgs e)
         {
+            if (_followRDPStatus)
+            {
+                RDPConnectionStatus(RDPSession.IsRDP());
+                return;
+            }
             if (totalTime != 0) elapsedTime += _RefreshTimer.Interval;
             if (elapsedTime >= totalTime)
             {
-                _RefreshTimer.Stop();
-                _TrayIcon.Text = NOTRUNNING_TEXT;
-                _TrayIcon.ShowBalloonTip(2000, "Stay Awake Timer Stopped", "Your Stay awake timer has stopped", ToolTipIcon.Info);
+                StopRefreshTimer();
             }
             else if ((DateTime.Now.TimeOfDay >= sleepingTimeStart) && (DateTime.Now.TimeOfDay <= sleepingTimeEnd))
             {
@@ -133,6 +172,13 @@ namespace NoSleep
                 _TrayIcon.Text = $"NoSleep Timer Running (Elapsed {elapsedTime / 60000} of {totalTime / 60000} minutes)";
                 WinU.SetThreadExecutionState(ExecutionMode);
             }
+        }
+
+        private void StopRefreshTimer()
+        {
+            _RefreshTimer.Stop();
+            _TrayIcon.Text = NOTRUNNING_TEXT;
+            _TrayIcon.ShowBalloonTip(2000, "Stay Awake Timer Stopped", "Your Stay awake timer has stopped", ToolTipIcon.Info);
         }
     }
 }

@@ -68,6 +68,7 @@
   <ItemGroup>
     <Compile Include="Program.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
+    <Compile Include="RDPSession.cs" />
     <Compile Include="TrayIcon.cs" />
     <Compile Include="WinU.cs" />
     <EmbeddedResource Include="Properties\Resources.resx">
