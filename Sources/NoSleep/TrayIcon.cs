@@ -152,6 +152,7 @@ namespace NoSleep
         {
             if (_followRDPStatus)
             {
+                WinU.SetThreadExecutionState(ExecutionMode);
                 RDPConnectionStatus(RDPSession.IsConnected);
                 return;
             }
